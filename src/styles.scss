@@ -1,1 +1,30 @@
 /* You can add global styles to this file, and also import other style files */
+
+$black: #222222;
+$white: #ffffff;
+$violet: #e543a4;
+$powder-blue: #b0e0e6;
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: $black;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  padding: 0.25rem 0.625rem;
+  min-width: 5rem;
+  margin: 4px 0;
+  color: #000;
+  background-color: $white;
+  border: none;
+  transition: background-color 0.25s ease-in-out;
+  border-radius: 99999px;
+  transition: scale background-color 0.2s ease-in-out;
+}
+button:hover {
+  background-color: #c3c3c3;
+  scale: 1.04;
+}
