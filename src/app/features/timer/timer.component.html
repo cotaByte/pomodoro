@@ -1,0 +1,48 @@
+@let countdownDisplay= countdownDisplay$ | async; @let
+circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning =
+(running$ | async) ?? false;
+
+<div class="main">
+  <div class="timer-circle">
+    <div class="time-info-container">
+      <div class="countdown">{{ countdownDisplay }}</div>
+      @if(!isTimerRunning){
+      <button (click)="start$.next()" class="btn">Start</button>
+      <button (click)="reset$.next()" class="btn">Reset</button>
+      }@else{
+      <button (click)="pause$.next()" class="btn">Pause</button>
+      }
+    </div>
+
+    <svg
+      width="24rem"
+      height="24rem"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        class="circle-background"
+        fill="transparent"
+        stroke="powderblue"
+        stroke-width="1.4"
+        r="48%"
+        cy="50%"
+        cx="50%"
+        stroke="#D3E0FB"
+        class="circle_background"
+      />
+
+      <circle
+        class="circle-progress"
+        stroke-dasharray="873.3627576979625 873.3627576979625"
+        [style.stroke-dashoffset]="-circleDashOffset"
+        r="48%"
+        cy="50%"
+        cx="50%"
+        stroke-width="1.4"
+        stroke="#4169E1"
+        fill="none"
+      />
+    </svg>
+  </div>
+</div>

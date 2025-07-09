@@ -1,0 +1,47 @@
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.time-info-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-items: center;
+  color: white;
+  font-size: 1rem;
+  z-index: 99;
+
+  .countdown {
+    font-size: 3.5rem;
+    font-weight: bold;
+  }
+}
+
+svg {
+  transform: rotate(270deg);
+}
+
+.timer-circle {
+  position: relative;
+  float: left;
+}
+
+.timer-circle h2 {
+  color: white;
+  text-align: center;
+  position: absolute;
+  line-height: 125px;
+  width: 100%;
+}
+
+.circle-progress {
+  transition: stroke-dashoffset 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transform-origin: 550% 50%;
+}
