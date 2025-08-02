@@ -41,3 +41,8 @@ body {
   --yellow-100: #fffae6;
   --yellow-500: #ffab00;
 }
+
+button,
+.btn {
+  user-select: none;
+}

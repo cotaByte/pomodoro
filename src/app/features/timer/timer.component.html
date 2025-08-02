@@ -1,12 +1,16 @@
 @let countdownDisplay= countdownDisplay$ | async; @let
-circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning
-=(running$ | async) ?? false;
+circleDashOffset=(circleDashOffset$ |async)?? 300; @let state =(state$ | async)
+?? TimerState.pristine;
 
 <div class="main">
   <div class="timer-circle">
     <div class="time-info-container">
+      @if(state ===TimerState.pristine){
       <form @fadeIn [formGroup]="form">
-        <div class="minute-operator-container">
+        <div
+          [class.disabled]="state !== TimerState.pristine"
+          class="minute-operator-container"
+        >
           <button
             (click)="
               isValidMinuteValue(form.controls.minutes.value - 1) &&
@@ -26,9 +30,7 @@ circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning
           </button>
         </div>
       </form>
-
-      @if(isTimerRunning){
-
+      }@if(state !== TimerState.pristine){
       <div @fadeIn class="countdown">{{ countdownDisplay }}</div>
       }@else {
       <div class="countdown">
@@ -36,14 +38,16 @@ circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning
           form.controls.seconds.value | number : '2.0-0'
         }}
       </div>
-      } @if(!isTimerRunning){
-      <div class="btn-container">
-        <button @fadeIn (click)="start$.next()" class="btn">▶</button>
-        <button @fadeIn (click)="reset$.next()" class="btn">↻</button>
-      </div>
-      }@else{
-      <button @fadeIn (click)="pause$.next()" class="btn">⏸</button>
       }
+      <div class="btn-container">
+        @if(state === TimerState.pristine){
+        <button @fadeIn (click)="start$.next()" class="btn">▶</button>}
+        @if(state ===TimerState.paused){
+        <button @fadeIn (click)="reset$.next()" class="btn">↻</button>
+        } @if(state === TimerState.running) {
+        <button @fadeIn (click)="pause$.next()" class="btn">⏸</button>
+        }
+      </div>
     </div>
 
     <svg

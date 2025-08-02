@@ -1,11 +1,6 @@
-import {
-  CdkOverlayOrigin,
-  ConnectedPosition,
-  OverlayModule,
-} from '@angular/cdk/overlay';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
-import { Component, signal, viewChild } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { Component } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -14,21 +9,33 @@ import {
   Validators,
 } from '@angular/forms';
 import {
+  EMPTY,
   filter,
   interval,
   map,
   merge,
+  Observable,
   of,
   ReplaySubject,
   shareReplay,
   startWith,
   switchMap,
-  take,
+  takeWhile,
 } from 'rxjs';
+import { FadeInAnimation } from '../../shared/animations/fadeIn.animation';
 import { FadeInFadeOutAnimation } from '../../shared/animations/fadeInFadeOut.animation';
 import { debug } from '../../shared/operators';
-import { FadeInAnimation } from '../../shared/animations/fadeIn.animation';
 
+enum TimerState {
+  running = 'running',
+  paused = 'paused',
+  pristine = 'pristine',
+}
+
+export type MinuteSecondPair = {
+  minutes: number;
+  seconds: number;
+};
 @Component({
   selector: 'pomodoro-timer',
   imports: [
@@ -45,42 +52,17 @@ import { FadeInAnimation } from '../../shared/animations/fadeIn.animation';
 export class TimerComponent {
   //#region CONSTANTS
   public readonly MINUTES = Array.from({ length: 60 }, (_, i) => i);
-  //#region START
+
+  //#region STATES
   public start$ = new ReplaySubject<void>();
-  //#endregion START
-
-  //#region RESET
   public reset$ = new ReplaySubject<void>();
-  //#endregion RESET
-
-  //#region PAUSE
   public pause$ = new ReplaySubject<void>();
-  //#endregion PAUSE
-
-  //#region RESUME
   public resume$ = new ReplaySubject<void>();
-  //#endregion RESUME
-
-  //#region OVERLAY
-  public $overlayVisibility = signal<boolean>(false);
-  $overlayTrigger = viewChild<CdkOverlayOrigin>('trigger');
-  overlayTrigger$ = toObservable(this.$overlayTrigger).pipe(
-    filter(Boolean),
-    debug('overlayTrigger$'),
-    shareReplay({ bufferSize: 1, refCount: true })
-  );
-
-  public readonly CONNECTED_POSITION_STRATEGY: ConnectedPosition = {
-    originX: 'start',
-    originY: 'bottom',
-    overlayX: 'start',
-    overlayY: 'top',
-  };
-  //#endregion OVERLAY
+  //#endregion STATES
 
   //#region TIME FORM
   form = new FormGroup({
-    minutes: new FormControl<number>(25, {
+    minutes: new FormControl<number>(5, {
       validators: [Validators.required],
       nonNullable: true,
     }),
@@ -92,50 +74,52 @@ export class TimerComponent {
   //#endregion TIME FORM
 
   //#region TIME FOR COUNTDOWN
-  public readonly DEFAULT_WORK_TIME = 25 * 60;
-
   public time$ = merge(
     this.form.valueChanges.pipe(
       debug('form.valueChanges'),
-      map((value) => value.minutes! * 60 + value.seconds!)
+      map((value) => this.toSeconds(value as MinuteSecondPair))
     ),
     this.reset$.pipe(
-      switchMap(() =>
-        of(this.form.value.minutes! * 60 + this.form.value.seconds!)
-      )
+      switchMap(() => of(this.toSeconds(this.form.getRawValue())))
     )
   ).pipe(
-    debug('time$'),
     startWith(this.form.value.minutes! * 60 + this.form.value.seconds!),
     shareReplay({ bufferSize: 1, refCount: true })
   );
   //#endregion TIME FOR COUNTDOWN
 
-  //#region RUNNING
-  public running$ = merge(
-    this.start$.pipe(map(() => true)),
-    this.resume$.pipe(map(() => true)),
-    this.reset$.pipe(map(() => false)),
-    this.pause$.pipe(map(() => false))
-  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
-  //#endregion RUNNING
+  //#region STATE
+  public readonly TimerState = TimerState;
+
+  public state$: Observable<TimerState> = merge(
+    this.start$.pipe(map(() => TimerState.running)),
+    this.pause$.pipe(map(() => TimerState.paused)),
+    this.resume$.pipe(map(() => TimerState.running)),
+    this.reset$.pipe(map(() => TimerState.pristine))
+  ).pipe(
+    startWith(TimerState.pristine),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  public readonly TIMER_STATE_OBSERVABLES: Record<
+    TimerState,
+    (state: TimerState) => Observable<any>
+  > = {
+    [TimerState.running]: (state) =>
+      interval(100).pipe(
+        switchMap((seconds) => this.time$.pipe(map((t) => [seconds, t]))),
+        map(([seconds, time]) => time - seconds * 0.1),
+        filter((remainingTime) => remainingTime >= 0),
+        takeWhile(() => state === TimerState.running)
+      ),
+    [TimerState.pristine]: (state) =>
+      of(this.toSeconds(this.form.getRawValue())),
+    [TimerState.paused]: (state) => EMPTY,
+  };
+  //#endregion STATE
 
   //#region COUNTDOWN
-  public countdown$ = this.running$.pipe(
-    switchMap((run) =>
-      interval(100).pipe(
-        switchMap((seconds) =>
-          this.time$.pipe(
-            take(1),
-            map((t) => [seconds, t])
-          )
-        ),
-        debug('countdown$'),
-        filter(() => !!run),
-        map(([seconds, time]) => (run ? time - seconds * 0.1 : time)),
-        filter((seconds) => seconds >= 0)
-      )
-    ),
+  public countdown$ = this.state$.pipe(
+    switchMap((state) => this.TIMER_STATE_OBSERVABLES[state](state)),
     shareReplay({ bufferSize: 1, refCount: true })
   );
   //#endregion COUNTDOWN
@@ -159,10 +143,11 @@ export class TimerComponent {
   //#region TIME PROGRSS
   public circleDashOffset$ = this.countdown$.pipe(
     map((countdown) => {
+      const timeSelected = this.toSeconds(this.form.getRawValue());
       const radius = 48;
       const circumference = 2 * Math.PI * radius;
 
-      const remainingPercentage = countdown / this.DEFAULT_WORK_TIME;
+      const remainingPercentage = countdown / timeSelected;
       return circumference * remainingPercentage;
     })
   );
@@ -171,6 +156,9 @@ export class TimerComponent {
   //#region HELPERS
   public isValidMinuteValue(value: number): boolean {
     return value > 0 && value < 60;
+  }
+  private toSeconds(value: MinuteSecondPair): number {
+    return value.minutes * 60 + value.seconds;
   }
   //#region HELPERS
 }
