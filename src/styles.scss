@@ -1,30 +1,43 @@
-/* You can add global styles to this file, and also import other style files */
-
-$black: #222222;
-$white: #ffffff;
-$violet: #e543a4;
-$powder-blue: #b0e0e6;
-
 body {
   font-family: Arial, sans-serif;
-  background-color: $black;
+  background-color: --black;
   height: 100vh;
   margin: 0;
   padding: 0;
 }
 
-button {
-  padding: 0.25rem 0.625rem;
-  min-width: 5rem;
-  margin: 4px 0;
-  color: #000;
-  background-color: $white;
-  border: none;
-  transition: background-color 0.25s ease-in-out;
-  border-radius: 99999px;
-  transition: scale background-color 0.2s ease-in-out;
-}
-button:hover {
-  background-color: #c3c3c3;
-  scale: 1.04;
+:root {
+  // primary colors
+  --white: #ffffff;
+  --black: #091e42;
+  // grey
+  --gray-50: #fafbfc;
+  --gray-100: #f4f5f7;
+  --gray-200: #ebecf0;
+  --gray-300: #dfe1e6;
+  --gray-400: #c1c7d0;
+  --gray-500: #b3bac5;
+  --gray-600: #a5adba;
+  --gray-700: #8993a4;
+  --gray-800: #6b778c;
+  --gray-900: #44546f;
+  // blue
+  --blue-100: #e9f2ff;
+  --blue-200: #cce0ff;
+  --blue-300: #85b8ff;
+  --blue-400: #579dff;
+  --blue-500: #388bff;
+  --blue-600: #1d7afc;
+  --blue-700: #0c66e4;
+  --blue-800: #0055cc;
+  --blue-900: #09326c;
+  // green
+  --green-100: #e3fcef;
+  --green-500: #36b37e;
+  // red
+  --red-100: #ffebe6;
+  --red-500: #ff5630;
+  // yellow
+  --yellow-100: #fffae6;
+  --yellow-500: #ffab00;
 }
