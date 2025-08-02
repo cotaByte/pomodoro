@@ -1,16 +1,46 @@
 @let countdownDisplay= countdownDisplay$ | async; @let
-circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning =
-(running$ | async) ?? false;
+circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning
+=(running$ | async) ?? false;
 
 <div class="main">
   <div class="timer-circle">
     <div class="time-info-container">
-      <div class="countdown">{{ countdownDisplay }}</div>
-      @if(!isTimerRunning){
-      <button (click)="start$.next()" class="btn">Start</button>
-      <button (click)="reset$.next()" class="btn">Reset</button>
+      <form @fadeIn [formGroup]="form">
+        <div class="minute-operator-container">
+          <button
+            (click)="
+              form.controls.minutes.setValue(form.controls.minutes.value - 1)
+            "
+          >
+            -
+          </button>
+          <div>1 min</div>
+          <button
+            (click)="
+              form.controls.minutes.setValue(form.controls.minutes.value + 1)
+            "
+          >
+            +
+          </button>
+        </div>
+      </form>
+
+      @if(isTimerRunning){
+
+      <div @fadeIn class="countdown">{{ countdownDisplay }}</div>
+      }@else {
+      <div class="countdown">
+        {{ form.controls.minutes.value | number : '2.0-0' }}:{{
+          form.controls.seconds.value | number : '2.0-0'
+        }}
+      </div>
+      } @if(!isTimerRunning){
+      <div class="btn-container">
+        <button @fadeIn (click)="start$.next()" class="btn">▶</button>
+        <button @fadeIn (click)="reset$.next()" class="btn">↻</button>
+      </div>
       }@else{
-      <button (click)="pause$.next()" class="btn">Pause</button>
+      <button @fadeIn (click)="pause$.next()" class="btn">⏸</button>
       }
     </div>
 
