@@ -167,4 +167,10 @@ export class TimerComponent {
     })
   );
   //#endregion TIME PROGRSS
+
+  //#region HELPERS
+  public isValidMinuteValue(value: number): boolean {
+    return value > 0 && value < 60;
+  }
+  //#region HELPERS
 }

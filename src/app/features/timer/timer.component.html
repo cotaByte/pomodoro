@@ -9,7 +9,8 @@ circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning
         <div class="minute-operator-container">
           <button
             (click)="
-              form.controls.minutes.setValue(form.controls.minutes.value - 1)
+              isValidMinuteValue(form.controls.minutes.value - 1) &&
+                form.controls.minutes.setValue(form.controls.minutes.value - 1)
             "
           >
             -
@@ -17,7 +18,8 @@ circleDashOffset=(circleDashOffset$ |async)?? 300; @let isTimerRunning
           <div>1 min</div>
           <button
             (click)="
-              form.controls.minutes.setValue(form.controls.minutes.value + 1)
+              isValidMinuteValue(form.controls.minutes.value + 1) &&
+                form.controls.minutes.setValue(form.controls.minutes.value + 1)
             "
           >
             +
