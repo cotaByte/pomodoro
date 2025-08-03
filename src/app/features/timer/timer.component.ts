@@ -9,6 +9,8 @@ import {
   Validators,
 } from '@angular/forms';
 import {
+  animationFrameScheduler,
+  defer,
   EMPTY,
   filter,
   interval,
@@ -21,6 +23,7 @@ import {
   startWith,
   switchMap,
   takeWhile,
+  tap,
 } from 'rxjs';
 import { FadeInAnimation } from '../../shared/animations/fadeIn.animation';
 import { FadeInFadeOutAnimation } from '../../shared/animations/fadeInFadeOut.animation';
@@ -76,14 +79,13 @@ export class TimerComponent {
   //#region TIME FOR COUNTDOWN
   public time$ = merge(
     this.form.valueChanges.pipe(
-      debug('form.valueChanges'),
       map((value) => this.toSeconds(value as MinuteSecondPair))
     ),
     this.reset$.pipe(
       switchMap(() => of(this.toSeconds(this.form.getRawValue())))
     )
   ).pipe(
-    startWith(this.form.value.minutes! * 60 + this.form.value.seconds!),
+    startWith(this.toSeconds(this.form.getRawValue())),
     shareReplay({ bufferSize: 1, refCount: true })
   );
   //#endregion TIME FOR COUNTDOWN
@@ -95,6 +97,7 @@ export class TimerComponent {
     this.start$.pipe(map(() => TimerState.running)),
     this.pause$.pipe(map(() => TimerState.paused)),
     this.resume$.pipe(map(() => TimerState.running)),
+    defer(() => this.timeEnds$.pipe(map(() => TimerState.pristine))),
     this.reset$.pipe(map(() => TimerState.pristine))
   ).pipe(
     startWith(TimerState.pristine),
@@ -104,13 +107,19 @@ export class TimerComponent {
     TimerState,
     (state: TimerState) => Observable<any>
   > = {
-    [TimerState.running]: (state) =>
-      interval(100).pipe(
-        switchMap((seconds) => this.time$.pipe(map((t) => [seconds, t]))),
-        map(([seconds, time]) => time - seconds * 0.1),
-        filter((remainingTime) => remainingTime >= 0),
+    [TimerState.running]: (state) => {
+      const startTime = performance.now();
+      const initialTime = this.toSeconds(this.form.getRawValue());
+
+      return interval(0, animationFrameScheduler).pipe(
+        map(() => {
+          const elapsedTime = (performance.now() - startTime) / 1000; // Tiempo transcurrido en segundos
+          const remainingTime = initialTime - elapsedTime;
+          return Math.max(remainingTime, 0); // Asegura que no sea negativo
+        }),
         takeWhile(() => state === TimerState.running)
-      ),
+      );
+    },
     [TimerState.pristine]: (state) =>
       of(this.toSeconds(this.form.getRawValue())),
     [TimerState.paused]: (state) => EMPTY,
@@ -153,6 +162,20 @@ export class TimerComponent {
   );
   //#endregion TIME PROGRSS
 
+  //#region TIME ENDS
+  public timeEnds$ = this.countdown$.pipe(
+    filter((v) => v === 0),
+    tap(() => {
+      Notification.permission === 'granted' &&
+        new Notification('Pomodoro finalizado', {
+          body: 'Toma tu descanso merecido!',
+        });
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  //#region TIME ENDS
+
   //#region HELPERS
   public isValidMinuteValue(value: number): boolean {
     return value > 0 && value < 60;
@@ -161,4 +184,8 @@ export class TimerComponent {
     return value.minutes * 60 + value.seconds;
   }
   //#region HELPERS
+
+  constructor() {
+    Notification.requestPermission();
+  }
 }

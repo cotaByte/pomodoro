@@ -1,6 +1,6 @@
 @let countdownDisplay= countdownDisplay$ | async; @let
 circleDashOffset=(circleDashOffset$ |async)?? 300; @let state =(state$ | async)
-?? TimerState.pristine;
+?? TimerState.pristine; @if( timeEnds$ | async){}
 
 <div class="main">
   <div class="timer-circle">
@@ -34,8 +34,8 @@ circleDashOffset=(circleDashOffset$ |async)?? 300; @let state =(state$ | async)
       <div @fadeIn class="countdown">{{ countdownDisplay }}</div>
       }@else {
       <div class="countdown">
-        {{ form.controls.minutes.value | number : '2.0-0' }}:{{
-          form.controls.seconds.value | number : '2.0-0'
+        {{ form.controls.minutes.value | number : "2.0-0" }}:{{
+          form.controls.seconds.value | number : "2.0-0"
         }}
       </div>
       }
