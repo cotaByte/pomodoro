@@ -1,6 +1,8 @@
 @let countdownDisplay= countdownDisplay$ | async; @let
 circleDashOffset=(circleDashOffset$ |async)?? 300; @let state =(state$ | async)
-?? TimerState.pristine; @if( timeEnds$ | async){}
+?? TimerState.pristine; @let webWorkerStart= webWorkerContdown$| async; @let
+webWorkerFinished= stopwebWorkerContdownFinished$| async; @let webWorkerStoped=
+stopwebWorkerContdown$ | async;
 
 <div class="main">
   <div class="timer-circle">

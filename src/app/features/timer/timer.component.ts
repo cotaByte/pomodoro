@@ -27,7 +27,8 @@ import {
 } from 'rxjs';
 import { FadeInAnimation } from '../../shared/animations/fadeIn.animation';
 import { FadeInFadeOutAnimation } from '../../shared/animations/fadeInFadeOut.animation';
-import { debug } from '../../shared/operators';
+import { TimerService } from './services/timer.service';
+// import { debug } from '../../shared/operators';
 
 enum TimerState {
   running = 'running',
@@ -58,14 +59,32 @@ export class TimerComponent {
 
   //#region STATES
   public start$ = new ReplaySubject<void>();
+  public webWorkerContdown$ = this.start$.pipe(
+    switchMap(() =>
+      this.timerService.startTimer(
+        this.toSeconds(this.form.getRawValue() as MinuteSecondPair)
+      )
+    ),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  public stopwebWorkerContdownFinished$ = this.webWorkerContdown$.pipe(
+    filter((event) => event.type === 'done'),
+    tap(() => this.playAlarm()),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
   public reset$ = new ReplaySubject<void>();
   public pause$ = new ReplaySubject<void>();
+
+  public stopwebWorkerContdown$ = this.pause$.pipe(
+    tap(() => this.timerService.stopTimer()),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
   public resume$ = new ReplaySubject<void>();
   //#endregion STATES
 
   //#region TIME FORM
   form = new FormGroup({
-    minutes: new FormControl<number>(5, {
+    minutes: new FormControl<number>(1, {
       validators: [Validators.required],
       nonNullable: true,
     }),
@@ -76,14 +95,17 @@ export class TimerComponent {
   });
   //#endregion TIME FORM
 
+  //#region TIME FOR FORM
+  formTime$ = this.form.valueChanges.pipe(
+    map((value) => this.toSeconds(value as MinuteSecondPair)),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  //#endregion STATES
+
   //#region TIME FOR COUNTDOWN
   public time$ = merge(
-    this.form.valueChanges.pipe(
-      map((value) => this.toSeconds(value as MinuteSecondPair))
-    ),
-    this.reset$.pipe(
-      switchMap(() => of(this.toSeconds(this.form.getRawValue())))
-    )
+    this.formTime$,
+    this.reset$.pipe(switchMap(() => this.formTime$))
   ).pipe(
     startWith(this.toSeconds(this.form.getRawValue())),
     shareReplay({ bufferSize: 1, refCount: true })
@@ -97,9 +119,12 @@ export class TimerComponent {
     this.start$.pipe(map(() => TimerState.running)),
     this.pause$.pipe(map(() => TimerState.paused)),
     this.resume$.pipe(map(() => TimerState.running)),
-    defer(() => this.timeEnds$.pipe(map(() => TimerState.pristine))),
+    defer(() =>
+      this.stopwebWorkerContdownFinished$.pipe(map(() => TimerState.pristine))
+    ),
     this.reset$.pipe(map(() => TimerState.pristine))
   ).pipe(
+    tap((state) => state === TimerState.running && this.audio.pause()),
     startWith(TimerState.pristine),
     shareReplay({ bufferSize: 1, refCount: true })
   );
@@ -149,7 +174,7 @@ export class TimerComponent {
   );
   //#endregion COUNTDOWN DISPLAY
 
-  //#region TIME PROGRSS
+  //#region TIME PROGRESS
   public circleDashOffset$ = this.countdown$.pipe(
     map((countdown) => {
       const timeSelected = this.toSeconds(this.form.getRawValue());
@@ -160,32 +185,27 @@ export class TimerComponent {
       return circumference * remainingPercentage;
     })
   );
-  //#endregion TIME PROGRSS
+  //#endregion TIME PROGRESS
 
-  //#region TIME ENDS
-  public timeEnds$ = this.countdown$.pipe(
-    filter((v) => v === 0),
-    tap(() => {
-      Notification.permission === 'granted' &&
-        new Notification('Pomodoro finalizado', {
-          body: 'Toma tu descanso merecido!',
-        });
-    }),
-    shareReplay({ bufferSize: 1, refCount: true })
-  );
+  //#region AUDIO
+  private audio = new Audio('alarm.mp3');
+  //#region AUDIO
 
-  //#region TIME ENDS
+  constructor(private timerService: TimerService) {}
 
   //#region HELPERS
   public isValidMinuteValue(value: number): boolean {
     return value > 0 && value < 60;
   }
+
   private toSeconds(value: MinuteSecondPair): number {
     return value.minutes * 60 + value.seconds;
   }
-  //#region HELPERS
 
-  constructor() {
-    Notification.requestPermission();
+  private playAlarm() {
+    this.audio.play().catch((error) => {
+      console.error('Error playing audio:', error);
+    });
   }
+  //#region HELPERS
 }
