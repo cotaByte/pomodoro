@@ -58,19 +58,6 @@ export class TimerComponent {
 
   //#region STATES
   public start$ = new ReplaySubject<void>();
-  public webWorkerContdown$ = this.start$.pipe(
-    switchMap(() =>
-      this.timerService.startTimer(
-        this.toSeconds(this.form.getRawValue() as MinuteSecondPair)
-      )
-    ),
-    shareReplay({ bufferSize: 1, refCount: true })
-  );
-  public stopwebWorkerContdownFinished$ = this.webWorkerContdown$.pipe(
-    filter((event) => event.type === 'done'),
-    tap(() => this.playAlarm()),
-    shareReplay({ bufferSize: 1, refCount: true })
-  );
   public reset$ = new ReplaySubject<void>();
   public pause$ = new ReplaySubject<void>();
 
@@ -93,6 +80,22 @@ export class TimerComponent {
     }),
   });
   //#endregion TIME FORM
+
+  //#region WEB WORKER COUNTDOWN
+  public webWorkerContdown$ = this.start$.pipe(
+    switchMap(() =>
+      this.timerService.startTimer(
+        this.toSeconds(this.form.getRawValue() as MinuteSecondPair)
+      )
+    ),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  public stopwebWorkerContdownFinished$ = this.webWorkerContdown$.pipe(
+    filter((event) => event.type === 'done'),
+    tap(() => this.playAlarm()),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  //#endregion WEB WORKER COUNTDOWN
 
   //#region TIME FOR FORM
   formTime$ = this.form.valueChanges.pipe(
