@@ -28,7 +28,6 @@ import {
 import { FadeInAnimation } from '../../shared/animations/fadeIn.animation';
 import { FadeInFadeOutAnimation } from '../../shared/animations/fadeInFadeOut.animation';
 import { TimerService } from './services/timer.service';
-// import { debug } from '../../shared/operators';
 
 enum TimerState {
   running = 'running',
