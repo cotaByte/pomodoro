@@ -43,11 +43,11 @@ stopwebWorkerContdown$ | async;
       }
       <div class="btn-container">
         @if(state === TimerState.pristine){
-        <button @fadeIn (click)="start$.next()" class="btn">▶</button>}
+        <i @fadeIn (click)="start$.next()" class="fa-solid fa-play"></i>}
         @if(state ===TimerState.paused){
-        <button @fadeIn (click)="reset$.next()" class="btn">↻</button>
+        <i @fadeIn (click)="reset$.next()" class="fa-solid fa-rotate-left"></i>
         } @if(state === TimerState.running) {
-        <button @fadeIn (click)="pause$.next()" class="btn">⏸</button>
+        <i @fadeIn (click)="pause$.next()" class="fa-solid fa-pause"></i>
         }
       </div>
     </div>
